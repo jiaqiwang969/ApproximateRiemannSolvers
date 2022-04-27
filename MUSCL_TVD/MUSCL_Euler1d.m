@@ -36,8 +36,8 @@ tEnd    = 0.15;	% Final time
 nx      = 200;  % Number of cells/Elements
 n       = 5;	% Number of degrees of freedom in the gas
 IC      = 01;	% ~12 Initial value problems are available
-limiter ='VA';  % MC, MM, VA.
-fluxMth ='HLLC'; % LF, ROE, RUS, AUSM, HLLE, HLLC.
+limiter ='VA';  % No,MC, MM, VA.
+fluxMth ='AUSMPlusUp'; % LF, ROE, RUS, AUSM,AUSMPlusUp, HLLE, HLLC.
 plot_fig= 1;
 
 % Ratio of specific heats for ideal di-atomic gas
@@ -98,6 +98,7 @@ while t < tEnd
             subplot(2,2,3); plot(xc,p(2:nx-1),'.k',xe,pe); 
             subplot(2,2,4); plot(xc,E(2:nx-1),'.r',xe,Ee);
             drawnow
+%             pause(0.5)
         end
     end
 end
@@ -107,12 +108,38 @@ cputime = toc;
 q=q(:,2:nx-1); nx=nx-2; 
 
 % compute flow properties
-r=q(1,:); u=q(2,:)./r; E=q(3,:)./r; p=(gamma-1)*r.*(E-0.5*u.^2);
+r=q(1,:); u=q(2,:)./r; E=q(3,:); p=(gamma-1)*(E-0.5*r.*u.^2);
+
+% Calculation of flow parameters
+a = sqrt(gamma*p./r); M = u./a; % Mach number [-]
+p_ref = 101325;           % Reference air pressure (N/m^2)
+r_ref = 1.225;            % Reference air density (kg/m^3)
+s_ref = 1/(gamma-1)*(log(p/p_ref)+gamma*log(r_ref./r)); 
+                          % Entropy w.r.t reference condition
+s = log(p./r.^gamma);     % Dimensionless Entropy
+Q = r.*u;                 % Mass Flow rate per unit area
+e = p./((gamma-1)*r);     % internal Energy
 
 % Plots results
-figure(2);
-subplot(2,2,1); plot(xc,r,'ro',xe,re,'-k'); xlabel('x'); ylabel('\rho'); legend(['MUSCL-',fluxMth],'Exact'); 
-title('SSP-RK2 TVD-MUSCL Euler Eqns.')
-subplot(2,2,2); plot(xc,u,'ro',xe,ue,'-k'); xlabel('x'); ylabel('u'); %legend(['MUSCL-',fluxMth],'Exact');
-subplot(2,2,3); plot(xc,p,'ro',xe,pe,'-k'); xlabel('x'); ylabel('p'); %legend(['MUSCL-',fluxMth],'Exact');
-subplot(2,2,4); plot(xc,E,'ro',xe,Ee,'-k'); xlabel('x'); ylabel('E'); %legend(['MUSCL-',fluxMth],'Exact');
+figure(1);
+s1=subplot(2,3,1); plot(xc,r,'or',xe,re,'k'); xlabel('x(m)'); ylabel('Density (kg/m^3)', 'FontSize', 20);
+grid on;
+%grid minor;
+s2=subplot(2,3,2); plot(xc,u,'or',xe,ue,'k'); xlabel('x(m)'); ylabel('Velocity (m/s)', 'FontSize', 20);
+grid on;
+%grid minor;
+s3=subplot(2,3,3); plot(xc,p,'or',xe,pe,'k'); xlabel('x(m)'); ylabel('Pressure (Pa)', 'FontSize', 20);
+grid on;
+%grid minor;
+s4=subplot(2,3,4); plot(xc,s,'or',xe,se,'k'); xlabel('x(m)'); ylabel('Entropy/R gas', 'FontSize', 20);
+grid on;
+%grid minor;
+s5=subplot(2,3,5); plot(xc,M,'or',xe,Me,'k'); xlabel('x(m)'); ylabel('Mach number', 'FontSize', 20);
+grid on;
+%grid minor;
+s6=subplot(2,3,6); plot(xc,e,'or',xe,ee,'k'); xlabel('x(m)'); ylabel('Internal Energy (kg/m^2s)', 'FontSize', 20);
+grid on;
+%grid minor;
+
+
+sgtitle(['RK2 TVD-MUSCL ',fluxMth,'-',limiter,' Riemman Solver Euler Eqns 1D.'], 'FontSize', 30);
